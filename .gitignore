@@ -27,8 +27,7 @@ __pycache__/
 *.py[cod]
 .coverage
 htmlcov/
-knit/tmp_conda/
-knit.egg-info/
+dask_yarn.egg-info/
 build/
 
 *.swp

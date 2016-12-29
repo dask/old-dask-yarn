@@ -3,15 +3,15 @@
 
 ```python
 
-  from dask_yarn import YARNCluster
-  cluster = YARNCluster
+from dask_yarn import YARNCluster
+cluster = YARNCluster
 
-   from dask.distributed import Client
-   client = Client(cluster)
-   client.start_workers(2)
+from dask.distributed import Client
+client = Client(cluster)
+cluster.start(2, cpus=1, memory=1000)
 
-   >>> future = client.submit(lambda x: x + 1, 10)
-   >>> future.result()
-   11
+>>> future = client.submit(lambda x: x + 1, 10)
+>>> future.result()
+11
 ```
 
