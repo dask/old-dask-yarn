@@ -8,7 +8,7 @@ from knit import Knit, CondaCreator
 from distributed import LocalCluster
 from toolz import unique
 
-global_packages = ['dask>=0.11', 'distributed>=1.13', 'hdfs3', 's3fs']
+global_packages = ['dask>=0.11', 'distributed>=1.13']
 
 prog = re.compile('\w+')
 

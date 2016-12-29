@@ -1,0 +1,37 @@
+language: python
+
+python:
+  - 2.7
+  - 3.5
+
+sudo: true
+
+services:
+  - docker
+
+before_install:
+  - pwd
+  - echo $TRAVIS_PYTHON_VERSION
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      export DOCKER_ENV=/opt/anaconda;
+    else
+      export DOCKER_ENV=/opt/anaconda/envs/py3;
+    fi
+  - pushd continuous_integration
+  - docker-compose up -d
+  - export CONTAINER_ID="dask_yarn_container"
+  - sleep 30
+
+install:
+  - pwd
+  - echo $DOCKER_ENV
+  - docker exec -it $CONTAINER_ID $DOCKER_ENV/bin/python setup.py install
+
+script:
+  - pwd
+  - echo $DOCKER_ENV
+  - docker exec -it $CONTAINER_ID bash /dask_yarn/continuous_integration/coverage_test.sh $DOCKER_ENV
+
+after_success:
+  - docker exec -it $CONTAINER_ID bash -c "export TRAVIS=$TRAVIS && export TRAVIS_JOB_ID=$TRAVIS_JOB_ID && TRAVIS_BRANCH=$TRAVIS_BRANCH && /dask_yarn/continuous_integration/coverage_upload.sh"
+
