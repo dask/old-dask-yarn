@@ -50,4 +50,5 @@ class YARNCluster(object):
         return self
 
     def __exit__(self, *args):
+        self.local_cluster.close()
         self.stop()
