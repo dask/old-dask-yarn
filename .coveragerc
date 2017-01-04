@@ -1,0 +1,6 @@
+[run]
+omit =
+    */test_*.py
+    dask_yarn/_version.py
+source =
+    dask_yarn

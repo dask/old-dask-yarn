@@ -1,10 +1,12 @@
 #!/usr/bin/env python
+import versioneer
 
 from os.path import exists
 from setuptools import setup
 
 setup(name='dask_yarn',
-      version='0.1.0',
+      version=versioneer.get_version(),
+      cmdclass=versioneer.get_cmdclass(),
       description='Dask on Yarn',
       url='http://github.com/dask/dask-yarn/',
       maintainer='Matthew Rocklin',

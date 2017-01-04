@@ -28,7 +28,6 @@ class YARNCluster(object):
         return self.local_cluster.scheduler_address
 
     def start(self, n_workers, cpus=1, memory=4000):
-        print('a')
         env_name = 'dask-' + sha1('-'.join(self.packages).encode()).hexdigest()
         if os.path.exists(os.path.join(CondaCreator().conda_envs, env_name + '.zip')):
             env = os.path.join(CondaCreator().conda_envs, env_name + '.zip')
