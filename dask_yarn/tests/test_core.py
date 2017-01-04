@@ -71,3 +71,20 @@ def test_yarn_cluster(loop):
             print(cluster.knit.logs(cluster.knit.app_id))
             print(subprocess.check_output(['df', '-h']))
             sys.exit(1)
+
+def test_yarn_cluster_stop(loop):
+    python_version = '%d.%d' % (sys.version_info.major, sys.version_info.minor)
+    python_pkg = 'python=%s' % (python_version)
+    cluster = YARNCluster(packages=[python_pkg])
+    cluster.start(1, cpus=1, memory=100)
+
+    client = Client(cluster)
+
+    info = client.scheduler_info()
+    workers = info['workers']
+    assert len(workers) == 1
+
+    cluster.stop()
+
+    workers = client.scheduler_info()['workers']
+    assert len(workers) == 0
