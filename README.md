@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/dask/dask-yarn.svg?branch=master)](https://travis-ci.org/dask/dask-yarn)
-
+[![Coverage Status](https://coveralls.io/repos/github/dask/dask-yarn/badge.svg?branch=master)](https://coveralls.io/github/dask/dask-yarn?branch=master)
 
 ## Example
 

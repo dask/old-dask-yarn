@@ -76,9 +76,11 @@ def test_yarn_cluster_stop(loop):
     python_version = '%d.%d' % (sys.version_info.major, sys.version_info.minor)
     python_pkg = 'python=%s' % (python_version)
     cluster = YARNCluster(packages=[python_pkg])
-    cluster.start(1, cpus=1, memory=100)
+    cluster.start(1, cpus=1, memory=256)
 
     client = Client(cluster)
+    future = client.submit(lambda x: x + 1, 10)
+    assert future.result() == 11
 
     info = client.scheduler_info()
     workers = info['workers']
