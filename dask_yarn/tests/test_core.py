@@ -30,6 +30,12 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
     return decorator
 
 
+def test_knit_config():
+    cluster = YARNCluster(nn="pi", nn_port=31415, rm="e", rm_port=27182,
+                          validate=False, autodetect=False)
+    str(cluster) == 'Knit<NN=pi:31415;RM=e:27182>'
+
+
 def test_yarn_cluster(loop):
     python_version = '%d.%d' % (sys.version_info.major, sys.version_info.minor)
     python_pkg = 'python=%s' % (python_version)

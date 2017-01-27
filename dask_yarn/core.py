@@ -18,10 +18,29 @@ def first_word(s):
 
 
 class YARNCluster(object):
-    def __init__(self, packages=[]):
-        self.local_cluster = LocalCluster(n_workers=0)
+    nn = "localhost"
+    nn_port = 8020
+    rm = "localhost"
+    rm_port = 8088
+
+    def __init__(self, nn=None, nn_port=None, rm=None,
+                 rm_port=None, autodetect=True, validate=False, packages=[]):
+        try:
+            self.local_cluster = LocalCluster(n_workers=0)
+        except (OSError, IOError):
+            self.local_cluster = LocalCluster(n_workers=0, scheduler_port=0)
         self.packages = list(unique(packages + global_packages, key=first_word))
-        self.knit = Knit(autodetect=True)
+
+        # if any hdfs/yarn settings are used don't use autodetect
+        if autodetect or not any([nn, nn_port, rm, rm_port]):
+            self.knit = Knit(autodetect=True, validate=validate)
+        else:
+            nn = nn or self.nn
+            nn_port = nn_port or self.nn_port
+            rm = rm or self.rm
+            rm_port = rm_port or self.rm_port
+            self.knit = Knit(nn=nn, nn_port=nn_port, rm=rm, rm_port=rm_port,
+                             validate=validate)
 
     @property
     def scheduler_address(self):
