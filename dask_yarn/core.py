@@ -1,14 +1,16 @@
 
 
-from hashlib import sha1
 import os
 import re
+from hashlib import sha1
+from tornado import gen
+
+from toolz import unique
 
 from knit import Knit, CondaCreator
 from distributed import LocalCluster
-from toolz import unique
 
-global_packages = ['dask>=0.11', 'distributed>=1.13']
+global_packages = ['dask>=0.14', 'distributed>=1.16']
 
 prog = re.compile('\w+')
 
@@ -29,7 +31,9 @@ class YARNCluster(object):
             self.local_cluster = LocalCluster(n_workers=0)
         except (OSError, IOError):
             self.local_cluster = LocalCluster(n_workers=0, scheduler_port=0)
+
         self.packages = list(unique(packages + global_packages, key=first_word))
+        self.workers = []
 
         # if any hdfs/yarn settings are used don't use autodetect
         if autodetect or not any([nn, nn_port, rm, rm_port]):
@@ -59,11 +63,67 @@ class YARNCluster(object):
         self.app_id = app_id
         return app_id
 
+    def remove_worker(self, container_id):
+        """
+        Stop worker and remove container
+
+        Parameters
+        ----------
+        container_id
+
+        Returns
+        -------
+        None
+        """
+        self.knit.remove_containers(container_id)
+
+    def update_worker_ids(self):
+        """
+        Update current worker ids
+
+        Returns
+        -------
+        None
+        """
+
+        # remove container ...00001 -- this is applicationMaster's container and
+        # should not be remove or counted as a worker
+
+        containers = self.knit.get_containers()
+        containers.sort()
+        self.application_master_container = containers.pop(0)
+        self.workers = containers
+
+    @gen.coroutine
+    def _start(self):
+        pass
+
     def stop(self):
         try:
-            self.knit.kill(self.app_id)
+            self.knit.kill()
         except AttributeError:
             pass
+
+    def add_workers(self, n_workers=1, cpus=1, memory=2048):
+        """
+        Non-blocking function to ask Yarn for more containers/dask-workers
+
+        Parameters
+        ----------
+        n_workers: int
+            number of containers to add (default: 1)
+
+        cpus: int
+            number of cpus (default: 1)
+        memory: int
+            amount of memory to allocate per container
+
+        Returns
+        -------
+        None
+        """
+
+        self.knit.add_containers(num_containers=n_workers, virtual_cores=cpus, memory=memory)
 
     def __enter__(self):
         return self

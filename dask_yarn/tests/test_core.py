@@ -78,7 +78,8 @@ def test_yarn_cluster(loop):
             print(subprocess.check_output(['df', '-h']))
             sys.exit(1)
 
-def test_yarn_cluster_stop(loop):
+
+def test_yarn_cluster_add_stop(loop):
     python_version = '%d.%d' % (sys.version_info.major, sys.version_info.minor)
     python_pkg = 'python=%s' % (python_version)
     cluster = YARNCluster(packages=[python_pkg])
@@ -92,6 +93,40 @@ def test_yarn_cluster_stop(loop):
     workers = info['workers']
     assert len(workers) == 1
 
+    status = cluster.knit.status()
+    num_containers = status['app']['runningContainers']
+    assert num_containers == 2  # 1 container for the worker and 1 for the RM
+
+    cluster.add_workers(n_workers=1, cpus=1, memory=256)
+
+    while num_containers != 3:
+        status = cluster.knit.status()
+        num_containers = status['app']['runningContainers']
+
+    # wait a tad to let workers connect to scheduler
+
+    start = time.time()
+    while len(client.scheduler_info()['workers']) < 2:
+        time.sleep(0.1)
+        assert time.time() < start + 10
+
+    assert num_containers == 3
+    info = client.scheduler_info()
+    workers = info['workers']
+    assert len(workers) == 2
+
+    cluster.update_worker_ids()
+    assert len(cluster.workers) == 2
+
+    cluster.remove_worker(cluster.workers[1])
+    while num_containers != 2:
+        status = cluster.knit.status()
+        num_containers = status['app']['runningContainers']
+
+    cluster.update_worker_ids()
+    assert len(cluster.workers) == 1
+
+    # STOP ALL WORKERS!
     cluster.stop()
 
     workers = client.scheduler_info()['workers']

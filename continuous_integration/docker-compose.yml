@@ -10,5 +10,6 @@ dask_yarn:
   working_dir: /dask_yarn
   volumes:
    - ../:/dask_yarn
+   - /Users/quasiben/Research/ContinuumDev/GitRepo/knit:/knit
   environment:
   - PYTHONPATH=/dask_yarn
