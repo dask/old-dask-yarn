@@ -4,13 +4,13 @@ import versioneer
 from os.path import exists
 from setuptools import setup
 
-setup(name='dask_yarn',
+setup(name='dask-yarn',
       version=versioneer.get_version(),
       cmdclass=versioneer.get_cmdclass(),
       description='Dask on Yarn',
       url='http://github.com/dask/dask-yarn/',
-      maintainer='Matthew Rocklin',
-      maintainer_email='mrocklin@gmail.com',
+      maintainer='Benjamin Zaitlen',
+      maintainer_email='quasiben@gmail.com',
       license='BSD',
       keywords='',
       packages=['dask_yarn'],
