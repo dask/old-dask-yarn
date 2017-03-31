@@ -82,7 +82,13 @@ def test_yarn_cluster(loop):
 def test_yarn_cluster_add_stop(loop):
     python_version = '%d.%d' % (sys.version_info.major, sys.version_info.minor)
     python_pkg = 'python=%s' % (python_version)
-    cluster = YARNCluster(packages=[python_pkg])
+
+    with YARNCluster(packages=[python_pkg]) as _cluster:
+        _cluster.start(1, cpus=1, memory=500)
+
+    assert len(_cluster.workers) == 0
+
+    cluster = YARNCluster(env=_cluster.env)
     cluster.start(1, cpus=1, memory=256)
 
     client = Client(cluster)
@@ -115,7 +121,6 @@ def test_yarn_cluster_add_stop(loop):
     workers = info['workers']
     assert len(workers) == 2
 
-    cluster.update_worker_ids()
     assert len(cluster.workers) == 2
 
     cluster.remove_worker(cluster.workers[1])
@@ -123,7 +128,6 @@ def test_yarn_cluster_add_stop(loop):
         status = cluster.knit.status()
         num_containers = status['app']['runningContainers']
 
-    cluster.update_worker_ids()
     assert len(cluster.workers) == 1
 
     # STOP ALL WORKERS!

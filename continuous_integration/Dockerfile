@@ -12,12 +12,12 @@ RUN rm /tmp/miniconda.sh
 ENV PATH /usr/local/hadoop-2.7.1/bin:/opt/anaconda/bin:$PATH
 
 RUN conda install -y -q pip coverage pytest requests apache-maven lxml py4j distributed -c anaconda-cluster
-RUN conda install -y -q distributed dask -c conda-forge
+RUN conda install -y -q "distributed>=1.16.1" dask -c conda-forge
 RUN pip install --install-option="mvn" git+https://github.com/dask/knit.git
 RUN /opt/anaconda/bin/pip install coveralls
 
 RUN conda create -y -q -n py3 coverage python=3.5 pytest requests apache-maven lxml py4j distributed -c anaconda-cluster
-RUN conda install -y -q -n py3 distributed dask -c conda-forge
+RUN conda install -y -q -n py3 "distributed>=1.16.1" dask -c conda-forge
 RUN /opt/anaconda/envs/py3/bin/pip install --install-option="mvn" git+https://github.com/dask/knit.git
 RUN /opt/anaconda/envs/py3/bin/pip install coveralls
 

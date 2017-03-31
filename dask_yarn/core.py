@@ -1,10 +1,10 @@
-
-
 import os
 import re
+import socket
+import atexit
 from hashlib import sha1
-from tornado import gen
 
+from tornado import gen
 from toolz import unique
 
 from knit import Knit, CondaCreator
@@ -26,14 +26,23 @@ class YARNCluster(object):
     rm_port = 8088
 
     def __init__(self, nn=None, nn_port=None, rm=None,
-                 rm_port=None, autodetect=True, validate=False, packages=[]):
-        try:
-            self.local_cluster = LocalCluster(n_workers=0)
-        except (OSError, IOError):
-            self.local_cluster = LocalCluster(n_workers=0, scheduler_port=0)
+                 rm_port=None, autodetect=True, validate=False,
+                 packages=None, ip=None, env=None):
 
-        self.packages = list(unique(packages + global_packages, key=first_word))
-        self.workers = []
+        ip = ip or socket.gethostbyname(socket.gethostname())
+
+        self.env = env or None
+
+        try:
+            self.local_cluster = LocalCluster(n_workers=0, ip=ip)
+        except (OSError, IOError):
+            self.local_cluster = LocalCluster(n_workers=0, scheduler_port=0, ip=ip)
+
+        if not self.env:
+            if not packages:
+                packages = []
+
+            self.packages = list(unique(packages + global_packages, key=first_word))
 
         # if any hdfs/yarn settings are used don't use autodetect
         if autodetect or not any([nn, nn_port, rm, rm_port]):
@@ -46,19 +55,26 @@ class YARNCluster(object):
             self.knit = Knit(nn=nn, nn_port=nn_port, rm=rm, rm_port=rm_port,
                              validate=validate)
 
+        atexit.register(self.stop)
+
     @property
     def scheduler_address(self):
         return self.local_cluster.scheduler_address
 
     def start(self, n_workers, cpus=1, memory=4000):
-        env_name = 'dask-' + sha1('-'.join(self.packages).encode()).hexdigest()
-        if os.path.exists(os.path.join(CondaCreator().conda_envs, env_name + '.zip')):
-            env = os.path.join(CondaCreator().conda_envs, env_name + '.zip')
-        else:
-            env = self.knit.create_env(env_name=env_name, packages=self.packages)
-        command = ('$PYTHON_BIN $CONDA_PREFIX/bin/dask-worker %s > /tmp/worker-log.out 2> /tmp/worker-log-err' %
-                   self.local_cluster.scheduler.address)
-        app_id = self.knit.start(command, env=env, num_containers=n_workers,
+        if not self.env:
+            env_name = 'dask-' + sha1('-'.join(self.packages).encode()).hexdigest()
+            if os.path.exists(os.path.join(CondaCreator().conda_envs, env_name + '.zip')):
+                self.env = os.path.join(CondaCreator().conda_envs, env_name + '.zip')
+            else:
+                self.env = self.knit.create_env(env_name=env_name, packages=self.packages)
+
+        command = '$PYTHON_BIN $CONDA_PREFIX/bin/dask-worker --nprocs=1 ' \
+                  '--nthreads=%d --memory-limit=%d %s > ' \
+                  '/tmp/worker-log.out 2> /tmp/worker-log.err' % (cpus, memory*1e6,
+                                                                  self.local_cluster.scheduler.address)
+
+        app_id = self.knit.start(command, env=self.env, num_containers=n_workers,
                                  virtual_cores=cpus, memory=memory)
         self.app_id = app_id
         return app_id
@@ -77,13 +93,14 @@ class YARNCluster(object):
         """
         self.knit.remove_containers(container_id)
 
-    def update_worker_ids(self):
+    @property
+    def workers(self):
         """
         Update current worker ids
 
         Returns
         -------
-        None
+        list: list of container ids
         """
 
         # remove container ...00001 -- this is applicationMaster's container and
@@ -92,8 +109,8 @@ class YARNCluster(object):
         containers = self.knit.get_containers()
         containers.sort()
         self.application_master_container = containers.pop(0)
-        self.workers = containers
-
+        return containers
+    
     @gen.coroutine
     def _start(self):
         pass
@@ -129,5 +146,5 @@ class YARNCluster(object):
         return self
 
     def __exit__(self, *args):
-        self.local_cluster.close()
         self.stop()
+        self.local_cluster.close()
