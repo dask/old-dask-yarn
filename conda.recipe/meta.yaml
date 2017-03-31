@@ -1,0 +1,23 @@
+package:
+    name: dask-yarn
+    version: 0.1
+
+source:
+    path: ../
+
+requirements:
+    build:
+        - python
+    run:
+        - python
+        - distributed >=1.16
+        - knit >=0.2
+
+test:
+  imports:
+    - dask_yarn
+
+about:
+  home: https://github.com/dask/dask-yarn
+  license: BSD
+  summary: Python interface to YARN for Dask
