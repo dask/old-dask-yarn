@@ -45,7 +45,7 @@ class YARNCluster(object):
             self.packages = list(unique(packages + global_packages, key=first_word))
 
         # if any hdfs/yarn settings are used don't use autodetect
-        if autodetect or not any([nn, nn_port, rm, rm_port]):
+        if autodetect or any([nn, nn_port, rm, rm_port]):
             self.knit = Knit(autodetect=True, validate=validate)
         else:
             nn = nn or self.nn
