@@ -88,8 +88,18 @@ def test_yarn_cluster_add_stop(loop):
 
     assert len(_cluster.workers) == 0
 
-    cluster = YARNCluster(env=_cluster.env)
+    # remove zip and give YARNCluster full path to env directory
+    os.remove(_cluster.zipped_env)
+    assert not os.path.exists(_cluster.zipped_env)
+
+    env = _cluster.zipped_env[:-4]  # cut off .zip suffix
+    assert os.path.exists(env)
+
+    cluster = YARNCluster(env=env)
     cluster.start(1, cpus=1, memory=256)
+
+    assert os.path.exists(cluster.zipped_env)
+    assert cluster.zipped_env == _cluster.zipped_env
 
     client = Client(cluster)
     future = client.submit(lambda x: x + 1, 10)
