@@ -32,6 +32,7 @@ class YARNCluster(object):
         ip = ip or socket.gethostbyname(socket.gethostname())
 
         self.env = env or None
+        self.zipped_env = None
 
         try:
             self.local_cluster = LocalCluster(n_workers=0, ip=ip)
@@ -62,19 +63,25 @@ class YARNCluster(object):
         return self.local_cluster.scheduler_address
 
     def start(self, n_workers, cpus=1, memory=4000):
+        cc = CondaCreator()
         if not self.env:
             env_name = 'dask-' + sha1('-'.join(self.packages).encode()).hexdigest()
-            if os.path.exists(os.path.join(CondaCreator().conda_envs, env_name + '.zip')):
-                self.env = os.path.join(CondaCreator().conda_envs, env_name + '.zip')
+            if os.path.exists(os.path.join(cc.conda_envs, env_name + '.zip')):
+                self.zipped_env = os.path.join(cc.conda_envs, env_name + '.zip')
             else:
-                self.env = self.knit.create_env(env_name=env_name, packages=self.packages)
+                self.zipped_env = self.knit.create_env(env_name=env_name, packages=self.packages)
+
+        else:
+            # build zip from supplied env directory path
+            env = self.env.rstrip('/')
+            self.zipped_env = cc.zip_env(env)
 
         command = '$PYTHON_BIN $CONDA_PREFIX/bin/dask-worker --nprocs=1 ' \
                   '--nthreads=%d --memory-limit=%d %s > ' \
                   '/tmp/worker-log.out 2> /tmp/worker-log.err' % (cpus, memory*1e6,
                                                                   self.local_cluster.scheduler.address)
 
-        app_id = self.knit.start(command, env=self.env, num_containers=n_workers,
+        app_id = self.knit.start(command, env=self.zipped_env, num_containers=n_workers,
                                  virtual_cores=cpus, memory=memory)
         self.app_id = app_id
         return app_id
